@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Already Signed - SONGXS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black text-white min-h-screen flex items-center justify-center px-6">
+    
+    <div class="max-w-md text-center">
+        <div class="text-6xl mb-6">✓</div>
+        <h1 class="text-4xl font-bold mb-4">Already Signed</h1>
+        <p class="text-zinc-400 mb-4">
+            This split sheet has already been signed by <strong>{{ collaborator.name }}</strong>.
+        </p>
+        <p class="text-sm text-zinc-600 mb-8">
+            Signed on: {{ collaborator.signed_at.strftime('%Y-%m-%d at %H:%M UTC') if collaborator.signed_at else 'Unknown' }}
+        </p>
+        <p class="text-sm text-zinc-600">
+            You can close this window now.
+        </p>
+    </div>
+
+</body>
+</html>

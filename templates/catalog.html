@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Catalog - SONGXS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black text-white min-h-screen">
+
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-sm border-b border-zinc-800">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="/" class="flex items-center">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="SONGXS Logo" class="h-10 object-contain">
+            </a>
+            <div class="flex gap-4 items-center">
+                <a href="/" class="px-4 py-2 bg-zinc-800 text-white rounded hover:bg-zinc-700 transition">
+                    Home
+                </a>
+                <a href="/catalog" class="px-4 py-2 bg-white text-black rounded hover:bg-zinc-200 transition">
+                    My Catalog
+                </a>
+                {% if current_user.is_admin %}
+                <a href="/admin" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">
+                    🔑 Admin
+                </a>
+                {% endif %}
+                <span class="text-zinc-400 text-sm" id="usernameDisplay"></span>
+                <span class="text-zinc-400 text-sm">|</span>
+                <a href="/logout" class="text-zinc-400 hover:text-white transition text-sm">
+                    Logout
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-6 pt-24 pb-12">
+        
+        <!-- Title & Stats -->
+        <div class="mb-8">
+            <h1 class="text-5xl font-bold mb-4">My Catalog</h1>
+            <div class="flex gap-6 text-zinc-400">
+                <div>
+                    <span class="text-3xl font-bold text-white" id="totalTracks">0</span>
+                    <span class="text-sm">Total Tracks</span>
+                </div>
+                <div>
+                    <span class="text-3xl font-bold text-white" id="tracksWithISRC">0</span>
+                    <span class="text-sm">With ISRC</span>
+                </div>
+                <div>
+                    <span class="text-3xl font-bold text-white" id="tracksWithUPC">0</span>
+                    <span class="text-sm">With UPC</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Buttons -->
+        <div class="mb-4 flex gap-3 justify-end">
+            <a href="/api/export-excel" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Export Excel
+            </a>
+            <a href="/api/export-pdf" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
+                Export PDF
+            </a>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="mb-8">
+            <!-- View Toggle -->
+            <div class="flex gap-2 mb-4">
+                <button 
+                    id="viewAllTracks"
+                    onclick="switchView('all')"
+                    class="px-4 py-2 bg-white text-black rounded-lg font-medium transition"
+                >
+                    All Tracks
+                </button>
+                <button 
+                    id="viewByArtist"
+                    onclick="switchView('artist')"
+                    class="px-4 py-2 bg-zinc-800 text-white rounded-lg font-medium hover:bg-zinc-700 transition"
+                >
+                    By Artist
+                </button>
+            </div>
+
+            <!-- Filter by Clearance Tier -->
+            <div class="mb-4">
+                <div class="flex items-center gap-2 text-sm flex-wrap">
+                    <span class="text-zinc-400">Filter by Tier:</span>
+                    <button 
+                        id="filterAll"
+                        onclick="filterByTier('all')"
+                        class="px-3 py-1 bg-white text-black rounded font-medium transition"
+                    >
+                        All
+                    </button>
+                    <button 
+                        id="filterFree"
+                        onclick="filterByTier('FreeClear')"
+                        class="px-3 py-1 bg-zinc-800 text-white rounded hover:bg-zinc-700 transition"
+                    >
+                        FreeClear
+                    </button>
+                    <button 
+                        id="filterPre"
+                        onclick="filterByTier('PreClear')"
+                        class="px-3 py-1 bg-zinc-800 text-white rounded hover:bg-zinc-700 transition"
+                    >
+                        PreClear
+                    </button>
+                    <button 
+                        id="filterEasy"
+                        onclick="filterByTier('EasyClear')"
+                        class="px-3 py-1 bg-zinc-800 text-white rounded hover:bg-zinc-700 transition"
+                    >
+                        EasyClear
+                    </button>
+                    <button 
+                        id="filterNone"
+                        onclick="filterByTier('none')"
+                        class="px-3 py-1 bg-zinc-800 text-white rounded hover:bg-zinc-700 transition"
+                    >
+                        No Clearance
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sort Options (Only visible in Artist view) -->
+            <div id="sortOptions" class="hidden mb-4">
+                <div class="flex items-center gap-2 text-sm">
+                    <span class="text-zinc-400">Sort by:</span>
+                    <button 
+                        id="sortTracks"
+                        onclick="sortArtists('tracks')"
+                        class="px-3 py-1 bg-white text-black rounded font-medium transition"
+                    >
+                        Tracks ▼
+                    </button>
+                    <button 
+                        id="sortAlpha"
+                        onclick="sortArtists('alpha')"
+                        class="px-3 py-1 bg-zinc-800 text-white rounded hover:bg-zinc-700 transition"
+                    >
+                        A-Z
+                    </button>
+                    <button 
+                        id="sortFollowers"
+                        onclick="sortArtists('followers')"
+                        class="px-3 py-1 bg-zinc-800 text-white rounded hover:bg-zinc-700 transition"
+                    >
+                        Followers
+                    </button>
+                    <button 
+                        id="sortCountry"
+                        onclick="sortArtists('country')"
+                        class="px-3 py-1 bg-zinc-800 text-white rounded hover:bg-zinc-700 transition"
+                    >
+                        Country
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Input -->
+            <div class="relative">
+                <input 
+                    type="text" 
+                    id="searchInput"
+                    placeholder="Search by track name, artist, or ISRC..."
+                    class="w-full p-4 pl-12 bg-zinc-900 border border-zinc-800 rounded-lg text-white placeholder-zinc-500 focus:border-white focus:outline-none"
+                />
+                <svg class="absolute left-4 top-4 w-6 h-6 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="text-center py-12 hidden">
+            <div class="animate-pulse">
+                <p class="text-xl">Loading catalog...</p>
+            </div>
+        </div>
+
+        <!-- Results Count -->
+        <div id="resultsCount" class="mb-4 text-zinc-400 hidden">
+            Showing <span id="count" class="text-white font-bold">0</span> tracks
+        </div>
+
+        <!-- Tracks List (All Tracks View) -->
+        <div id="tracksList" class="space-y-3">
+            <!-- Tracks will be inserted here by JavaScript -->
+        </div>
+
+        <!-- Artists List (By Artist View) -->
+        <div id="artistsList" class="space-y-6 hidden">
+            <!-- Artists will be inserted here by JavaScript -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="text-center py-12 hidden">
+            <p class="text-xl text-zinc-500 mb-4">No tracks in your catalog yet</p>
+            <a href="/" class="px-6 py-3 bg-white text-black rounded-lg hover:bg-zinc-200 transition inline-block">
+                Extract Your First Playlist
+            </a>
+        </div>
+
+    </div>
+
+    <script>
+        let allTracks = [];
+        let currentView = 'all'; // 'all' or 'artist'
+        let currentSort = 'tracks'; // 'tracks', 'alpha', 'followers', 'country'
+        let currentFilter = 'all'; // 'all', 'FreeClear', 'PreClear', 'EasyClear', 'none'
+        const isAdmin = {{ 'true' if is_admin else 'false' }};  // Check if user is admin
+        
+        // Load catalog when page loads
+        window.addEventListener('load', loadCatalog);
+        
+        // Search when user types
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const query = e.target.value.trim();
+            if (query.length === 0) {
+                loadCatalog();
+            } else {
+                searchCatalog(query);
+            }
+        });
+
+        // Switch between views
+        function switchView(view) {
+            currentView = view;
+            
+            // Update button styles
+            const allTracksBtn = document.getElementById('viewAllTracks');
+            const byArtistBtn = document.getElementById('viewByArtist');
+            const sortOptions = document.getElementById('sortOptions');
+            
+            if (view === 'all') {
+                allTracksBtn.className = 'px-4 py-2 bg-white text-black rounded-lg font-medium transition';
+                byArtistBtn.className = 'px-4 py-2 bg-zinc-800 text-white rounded-lg font-medium hover:bg-zinc-700 transition';
+                hideElement('artistsList');
+                hideElement('sortOptions');
+                showElement('tracksList');
+                displayTracks(allTracks);
+            } else {
+                allTracksBtn.className = 'px-4 py-2 bg-zinc-800 text-white rounded-lg font-medium hover:bg-zinc-700 transition';
+                byArtistBtn.className = 'px-4 py-2 bg-white text-black rounded-lg font-medium transition';
+                hideElement('tracksList');
+                showElement('sortOptions');
+                showElement('artistsList');
+                displayArtists(allTracks);
+            }
+        }
+
+        // Filter tracks by clearance tier
+        function filterByTier(filter) {
+            currentFilter = filter;
+            
+            // Update button styles
+            const filterButtons = {
+                'all': 'filterAll',
+                'FreeClear': 'filterFree',
+                'PreClear': 'filterPre',
+                'EasyClear': 'filterEasy',
+                'none': 'filterNone'
+            };
+            
+            // Reset all buttons
+            Object.values(filterButtons).forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.className = 'px-3 py-1 bg-zinc-800 text-white rounded hover:bg-zinc-700 transition';
+                }
+            });
+            
+            // Highlight active button
+            const activeBtn = document.getElementById(filterButtons[filter]);
+            if (activeBtn) {
+                activeBtn.className = 'px-3 py-1 bg-white text-black rounded font-medium transition';
+            }
+            
+            // Re-display with filter
+            if (currentView === 'all') {
+                displayTracks(allTracks);
+            } else {
+                displayArtists(allTracks);
+            }
+        }
+
+        // Sort artists by different criteria
+        function sortArtists(sortBy) {
+            currentSort = sortBy;
+            
+            // Update button styles
+            const buttons = {
+                tracks: document.getElementById('sortTracks'),
+                alpha: document.getElementById('sortAlpha'),
+                followers: document.getElementById('sortFollowers'),
+                country: document.getElementById('sortCountry')
+            };
+            
+            // Reset all buttons
+            Object.keys(buttons).forEach(key => {
+                if (key !== 'country') {
+                    buttons[key].className = 'px-3 py-1 bg-zinc-800 text-white rounded hover:bg-zinc-700 transition';
+                }
+            });
+            
+            // Highlight active button
+            if (sortBy !== 'country') {
+                buttons[sortBy].className = 'px-3 py-1 bg-white text-black rounded font-medium transition';
+            }
+            
+            // Re-display with new sorting
+            displayArtists(allTracks);
+        }
+
+        async function loadCatalog() {
+            showElement('loading');
+            hideElement('tracksList');
+            hideElement('artistsList');
+            hideElement('emptyState');
+            hideElement('resultsCount');
+
+            try {
+                const response = await fetch('/api/catalog');
+                const data = await response.json();
+
+                allTracks = data.tracks;
+
+                // Update stats
+                document.getElementById('totalTracks').textContent = data.stats.total_tracks;
+                document.getElementById('tracksWithISRC').textContent = data.stats.tracks_with_isrc;
+                document.getElementById('tracksWithUPC').textContent = data.stats.tracks_with_upc;
+
+                // Show username
+                if (data.username) {
+                    document.getElementById('usernameDisplay').textContent = data.username;
+                }
+
+                hideElement('loading');
+
+                if (allTracks.length === 0) {
+                    showElement('emptyState');
+                } else {
+                    // Display based on current view
+                    if (currentView === 'all') {
+                        displayTracks(allTracks);
+                    } else {
+                        displayArtists(allTracks);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error loading catalog:', error);
+                hideElement('loading');
+                alert('Error loading catalog');
+            }
+        }
+
+        async function searchCatalog(query) {
+            showElement('loading');
+            hideElement('tracksList');
+            hideElement('artistsList');
+
+            try {
+                const response = await fetch(`/api/catalog?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                hideElement('loading');
+                
+                if (currentView === 'all') {
+                    displayTracks(data.tracks);
+                } else {
+                    displayArtists(data.tracks);
+                }
+
+            } catch (error) {
+                console.error('Error searching:', error);
+                hideElement('loading');
+            }
+        }
+
+        function groupTracksByArtist(tracks) {
+            const artistMap = new Map();
+            
+            tracks.forEach(track => {
+                // Use first artist name as key
+                const artistName = track.artists ? track.artists.split(',')[0].trim() : 'Unknown Artist';
+                
+                if (!artistMap.has(artistName)) {
+                    artistMap.set(artistName, {
+                        name: artistName,
+                        image: track.artist_image_url,
+                        followers: track.artist_followers,
+                        genres: track.artist_genres,
+                        country: track.artist_country || null,
+                        city: track.artist_city || null,
+                        instagram_username: track.instagram_username || null,
+                        instagram_followers: track.instagram_followers || null,
+                        tiktok_username: track.tiktok_username || null,
+                        tiktok_followers: track.tiktok_followers || null,
+                        tracks: []
+                    });
+                }
+                
+                artistMap.get(artistName).tracks.push(track);
+            });
+            
+            // Convert to array
+            let artists = Array.from(artistMap.values());
+            
+            // Sort based on current sort option
+            switch(currentSort) {
+                case 'tracks':
+                    // Sort by number of tracks (descending)
+                    artists.sort((a, b) => b.tracks.length - a.tracks.length);
+                    break;
+                    
+                case 'alpha':
+                    // Sort alphabetically (A-Z)
+                    artists.sort((a, b) => a.name.localeCompare(b.name));
+                    break;
+                    
+                case 'followers':
+                    // Sort by followers (descending)
+                    artists.sort((a, b) => {
+                        const followersA = a.followers || 0;
+                        const followersB = b.followers || 0;
+                        return followersB - followersA;
+                    });
+                    break;
+                    
+                case 'country':
+                    // Sort by country (alphabetically)
+                    artists.sort((a, b) => {
+                        const countryA = a.country || 'Unknown';
+                        const countryB = b.country || 'Unknown';
+                        if (countryA === 'Unknown' && countryB !== 'Unknown') return 1;
+                        if (countryA !== 'Unknown' && countryB === 'Unknown') return -1;
+                        return countryA.localeCompare(countryB);
+                    });
+                    break;
+            }
+            
+            return artists;
+        }
+
+        function displayArtists(tracks) {
+            const container = document.getElementById('artistsList');
+            const resultsCount = document.getElementById('resultsCount');
+            const countSpan = document.getElementById('count');
+
+            // Apply clearance filter
+            let filteredTracks = tracks;
+            if (currentFilter !== 'all') {
+                if (currentFilter === 'none') {
+                    filteredTracks = tracks.filter(track => !track.clearance_type);
+                } else {
+                    filteredTracks = tracks.filter(track => track.clearance_type === currentFilter);
+                }
+            }
+
+            if (filteredTracks.length === 0) {
+                container.innerHTML = '<p class="text-center text-zinc-500 py-8">No tracks found with this filter</p>';
+                hideElement('resultsCount');
+                return;
+            }
+
+            const artists = groupTracksByArtist(filteredTracks);
+
+            // Show results count
+            countSpan.textContent = `${artists.length} artists, ${filteredTracks.length} tracks`;
+            showElement('resultsCount');
+
+            // Display collapsible artist cards
+            container.innerHTML = artists.map((artist, index) => `
+                <div class="bg-zinc-900 rounded-lg overflow-hidden">
+                    <!-- Artist Header (Clickable) -->
+                    <div 
+                        class="p-6 cursor-pointer hover:bg-zinc-800 transition flex items-center gap-4"
+                        onclick="toggleArtist(${index})"
+                    >
+                        <!-- Expand/Collapse Icon -->
+                        <div class="text-2xl text-zinc-400 flex-shrink-0" id="icon-${index}">
+                            ▶
+                        </div>
+
+                        <!-- Artist Image -->
+                        ${artist.image ? `
+                            <img src="${artist.image}" 
+                                 alt="${artist.name}"
+                                 class="w-16 h-16 rounded-full object-cover shadow-lg flex-shrink-0"
+                                 onerror="this.style.display='none'"
+                            />
+                        ` : `
+                            <div class="w-16 h-16 rounded-full bg-zinc-700 flex items-center justify-center text-2xl font-bold flex-shrink-0">
+                                ${artist.name.charAt(0).toUpperCase()}
+                            </div>
+                        `}
+                        
+                        <!-- Artist Info (Compact) -->
+                        <div class="flex-1 min-w-0">
+                            <h2 class="text-xl font-bold truncate">${artist.name}</h2>
+                            ${artist.city || artist.country ? `
+                                <p class="text-zinc-500 text-sm truncate">
+                                    📍 ${artist.city ? artist.city + ', ' : ''}${artist.country || ''}
+                                </p>
+                            ` : ''}
+                            <div class="flex gap-3 text-sm text-zinc-400 mt-1 flex-wrap">
+                                ${artist.followers ? `
+                                    <span>👥 ${formatFollowers(artist.followers)}</span>
+                                ` : ''}
+                                ${artist.genres ? `
+                                    <span>🎵 ${artist.genres.split(',')[0].trim()}</span>
+                                ` : ''}
+                                <span class="text-zinc-500">
+                                    ${artist.tracks.length} track${artist.tracks.length !== 1 ? 's' : ''}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Artist Tracks (Collapsible) -->
+                    <div id="tracks-${index}" class="hidden border-t border-zinc-800">
+                        <!-- Social Stats (if available) -->
+                        ${(artist.followers || artist.instagram_followers || artist.tiktok_followers) ? `
+                            <div class="p-6 pb-3 border-b border-zinc-800/50">
+                                <h3 class="text-sm font-bold text-zinc-400 mb-3">Social Stats</h3>
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                    ${artist.followers ? `
+                                        <div class="bg-zinc-800/50 rounded-lg p-3">
+                                            <div class="text-xs text-zinc-500 mb-1">📱 Spotify</div>
+                                            <div class="text-lg font-bold">${formatFollowers(artist.followers)}</div>
+                                            <div class="text-xs text-zinc-500">followers</div>
+                                        </div>
+                                    ` : ''}
+                                    ${artist.instagram_followers ? `
+                                        <div class="bg-zinc-800/50 rounded-lg p-3">
+                                            <div class="text-xs text-zinc-500 mb-1">📸 Instagram</div>
+                                            <div class="text-lg font-bold">${formatFollowers(artist.instagram_followers)}</div>
+                                            <div class="text-xs text-zinc-500">@${artist.instagram_username}</div>
+                                        </div>
+                                    ` : ''}
+                                    ${artist.tiktok_followers ? `
+                                        <div class="bg-zinc-800/50 rounded-lg p-3">
+                                            <div class="text-xs text-zinc-500 mb-1">🎵 TikTok</div>
+                                            <div class="text-lg font-bold">${formatFollowers(artist.tiktok_followers)}</div>
+                                            <div class="text-xs text-zinc-500">@${artist.tiktok_username}</div>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                ${(artist.followers && artist.instagram_followers) || (artist.followers && artist.tiktok_followers) || (artist.instagram_followers && artist.tiktok_followers) ? `
+                                    <div class="mt-3 pt-3 border-t border-zinc-700/50">
+                                        <div class="text-xs text-zinc-500">Total Reach</div>
+                                        <div class="text-2xl font-bold text-blue-400">
+                                            ${formatFollowers((artist.followers || 0) + (artist.instagram_followers || 0) + (artist.tiktok_followers || 0))}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+                        
+                        <div class="p-6 space-y-2">
+                            ${artist.tracks.map(track => `
+                                <div class="bg-zinc-800 rounded-lg p-4 hover:bg-zinc-750 transition flex gap-4 items-center">
+                                    ${track.album_image_url ? `
+                                        <img src="${track.album_image_url}" 
+                                             alt="${track.album}"
+                                             class="w-16 h-16 rounded object-cover shadow flex-shrink-0"
+                                             onerror="this.style.display='none'"
+                                        />
+                                    ` : ''}
+                                    
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="font-bold truncate">${track.track_name}</h4>
+                                        <p class="text-sm text-zinc-400 truncate">${track.album || 'Unknown Album'}</p>
+                                        <div class="flex gap-3 mt-2 text-xs text-zinc-500">
+                                            ${track.isrc ? `<span>ISRC: ${track.isrc}</span>` : ''}
+                                            ${track.tempo ? `<span>🎵 ${Math.round(track.tempo)} BPM</span>` : ''}
+                                        </div>
+                                    </div>
+
+                                    <div class="flex gap-2 flex-shrink-0">
+                                        ${track.energy !== null ? `
+                                            <span class="px-2 py-1 bg-zinc-700 rounded text-xs whitespace-nowrap">
+                                                ⚡ ${Math.round(track.energy * 100)}%
+                                            </span>
+                                        ` : ''}
+                                        ${track.danceability !== null ? `
+                                            <span class="px-2 py-1 bg-zinc-700 rounded text-xs whitespace-nowrap">
+                                                💃 ${Math.round(track.danceability * 100)}%
+                                            </span>
+                                        ` : ''}
+                                        ${track.spotify_url ? `
+                                            <a href="${track.spotify_url}" target="_blank" 
+                                               class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition whitespace-nowrap"
+                                               onclick="event.stopPropagation()">
+                                                Spotify
+                                            </a>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            showElement('artistsList');
+        }
+
+        // Toggle artist tracks visibility
+        function toggleArtist(index) {
+            const tracksDiv = document.getElementById(`tracks-${index}`);
+            const icon = document.getElementById(`icon-${index}`);
+            
+            if (tracksDiv.classList.contains('hidden')) {
+                // Expand
+                tracksDiv.classList.remove('hidden');
+                icon.textContent = '▼';
+            } else {
+                // Collapse
+                tracksDiv.classList.add('hidden');
+                icon.textContent = '▶';
+            }
+        }
+
+        function displayTracks(tracks) {
+            const container = document.getElementById('tracksList');
+            const resultsCount = document.getElementById('resultsCount');
+            const countSpan = document.getElementById('count');
+
+            // Apply clearance filter
+            let filteredTracks = tracks;
+            if (currentFilter !== 'all') {
+                if (currentFilter === 'none') {
+                    // Filter tracks with no clearance set
+                    filteredTracks = tracks.filter(track => !track.clearance_type);
+                } else {
+                    // Filter by specific clearance type
+                    filteredTracks = tracks.filter(track => track.clearance_type === currentFilter);
+                }
+            }
+
+            if (filteredTracks.length === 0) {
+                container.innerHTML = '<p class="text-center text-zinc-500 py-8">No tracks found with this filter</p>';
+                hideElement('resultsCount');
+                return;
+            }
+
+            // Show results count
+            countSpan.textContent = filteredTracks.length;
+            showElement('resultsCount');
+
+            // Display tracks with images and improved formatting
+            container.innerHTML = filteredTracks.map(track => `
+                <div class="bg-zinc-900 rounded-lg overflow-hidden hover:bg-zinc-800 transition">
+                    <div class="flex gap-4 p-6">
+                        
+                        <!-- Album Cover -->
+                        ${track.album_image_url ? `
+                            <div class="flex-shrink-0">
+                                <img src="${track.album_image_url}" 
+                                     alt="${track.album || 'Album'}"
+                                     class="w-24 h-24 rounded-lg object-cover shadow-lg"
+                                     onerror="this.style.display='none'"
+                                />
+                            </div>
+                        ` : ''}
+
+                        <!-- Track Info -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex-1 min-w-0">
+                                    <h3 class="text-xl font-bold truncate">${track.track_name}</h3>
+                                    
+                                    <!-- Artist with Image -->
+                                    <div class="flex items-center gap-2 mt-1">
+                                        ${track.artist_image_url ? `
+                                            <img src="${track.artist_image_url}" 
+                                                 alt="Artist"
+                                                 class="w-6 h-6 rounded-full object-cover"
+                                                 onerror="this.style.display='none'"
+                                            />
+                                        ` : ''}
+                                        <p class="text-zinc-400 truncate">${track.artists || 'Unknown Artist'}</p>
+                                    </div>
+                                    
+                                    <p class="text-zinc-500 text-sm mt-1 truncate">${track.album || ''}</p>
+                                </div>
+                                <div class="flex gap-2 ml-4">
+                                    ${track.spotify_url ? `
+                                        <a href="${track.spotify_url}" target="_blank" 
+                                           class="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition whitespace-nowrap">
+                                            Spotify
+                                        </a>
+                                    ` : ''}
+                                </div>
+                            </div>
+
+                            <!-- Metadata Grid -->
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                                ${track.isrc ? `
+                                    <div>
+                                        <div class="text-xs text-zinc-500">ISRC</div>
+                                        <div class="text-sm text-zinc-300 font-mono">${track.isrc}</div>
+                                    </div>
+                                ` : ''}
+                                ${track.upc ? `
+                                    <div>
+                                        <div class="text-xs text-zinc-500">UPC</div>
+                                        <div class="text-sm text-zinc-300 font-mono">${track.upc}</div>
+                                    </div>
+                                ` : ''}
+                                ${track.tempo ? `
+                                    <div>
+                                        <div class="text-xs text-zinc-500">Tempo</div>
+                                        <div class="text-sm text-zinc-300">${Math.round(track.tempo)} BPM</div>
+                                    </div>
+                                ` : ''}
+                                ${track.lastfm_playcount ? `
+                                    <div>
+                                        <div class="text-xs text-zinc-500">Last.fm Plays</div>
+                                        <div class="text-sm text-zinc-300">${formatNumber(track.lastfm_playcount)}</div>
+                                    </div>
+                                ` : ''}
+                            </div>
+
+                            <!-- Audio Features -->
+                            ${track.energy !== null || track.danceability !== null ? `
+                                <div class="mb-3">
+                                    <div class="text-xs text-zinc-500 mb-2">Audio Features</div>
+                                    <div class="flex gap-2 flex-wrap">
+                                        ${track.energy !== null ? `
+                                            <span class="px-2 py-1 bg-zinc-800 rounded text-xs">
+                                                ⚡ Energy: ${Math.round(track.energy * 100)}%
+                                            </span>
+                                        ` : ''}
+                                        ${track.danceability !== null ? `
+                                            <span class="px-2 py-1 bg-zinc-800 rounded text-xs">
+                                                💃 Dance: ${Math.round(track.danceability * 100)}%
+                                            </span>
+                                        ` : ''}
+                                        ${track.valence !== null ? `
+                                            <span class="px-2 py-1 bg-zinc-800 rounded text-xs">
+                                                😊 Mood: ${Math.round(track.valence * 100)}%
+                                            </span>
+                                        ` : ''}
+                                        ${track.acousticness !== null ? `
+                                            <span class="px-2 py-1 bg-zinc-800 rounded text-xs">
+                                                🎸 Acoustic: ${Math.round(track.acousticness * 100)}%
+                                            </span>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            <!-- Artist Stats -->
+                            ${track.artist_followers || track.artist_genres ? `
+                                <div class="mb-3">
+                                    <div class="text-xs text-zinc-500 mb-2">Artist Stats</div>
+                                    <div class="flex gap-2 flex-wrap">
+                                        ${track.artist_followers ? `
+                                            <span class="px-2 py-1 bg-zinc-800 rounded text-xs">
+                                                👥 ${formatFollowers(track.artist_followers)} followers
+                                            </span>
+                                        ` : ''}
+                                        ${track.artist_genres ? `
+                                            <span class="px-2 py-1 bg-zinc-800 rounded text-xs">
+                                                🎵 ${track.artist_genres.split(',')[0].trim()}
+                                            </span>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            <!-- Last.fm Tags -->
+                            ${track.lastfm_tags ? `
+                                <div>
+                                    <div class="text-xs text-zinc-500 mb-2">Tags</div>
+                                    <div class="flex gap-2 flex-wrap">
+                                        ${track.lastfm_tags.split(',').slice(0, 5).map(tag => `
+                                            <span class="px-2 py-1 bg-blue-900/30 text-blue-300 rounded text-xs">
+                                                ${tag.trim()}
+                                            </span>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            <!-- Clearance System -->
+                            <div class="mt-4 pt-4 border-t border-zinc-800">
+                                <div class="text-xs text-zinc-500 font-semibold mb-2">Clearance</div>
+                                
+                                <!-- Clearance Type Buttons -->
+                                <div class="grid grid-cols-3 gap-2 mb-3">
+                                    <button 
+                                        onclick="selectClearance(${track.id}, 'FreeClear')"
+                                        id="btn-free-${track.id}"
+                                        class="px-3 py-2 text-sm rounded transition ${track.clearance_type === 'FreeClear' ? 'bg-green-600 text-white font-bold ring-2 ring-green-400' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}"
+                                    >
+                                        FreeClear
+                                    </button>
+                                    <button 
+                                        onclick="selectClearance(${track.id}, 'PreClear')"
+                                        id="btn-pre-${track.id}"
+                                        class="px-3 py-2 text-sm rounded transition ${track.clearance_type === 'PreClear' ? 'bg-blue-600 text-white font-bold ring-2 ring-blue-400' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}"
+                                    >
+                                        PreClear
+                                    </button>
+                                    <button 
+                                        onclick="selectClearance(${track.id}, 'EasyClear')"
+                                        id="btn-easy-${track.id}"
+                                        class="px-3 py-2 text-sm rounded transition ${track.clearance_type === 'EasyClear' ? 'bg-purple-600 text-white font-bold ring-2 ring-purple-400' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}"
+                                    >
+                                        EasyClear
+                                    </button>
+                                </div>
+                                
+                                <!-- Price Input - Always visible -->
+                                <div class="flex gap-2 items-center">
+                                    <label class="text-sm text-zinc-400 w-12">Price:</label>
+                                    <input 
+                                        type="number" 
+                                        id="price-${track.id}"
+                                        placeholder="0.00"
+                                        min="0"
+                                        step="0.01"
+                                        value="${track.clearance_price || ''}"
+                                        class="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white text-sm focus:border-white focus:outline-none"
+                                        onkeypress="if(event.key === 'Enter') saveClearancePrice(${track.id})"
+                                    />
+                                    <button 
+                                        onclick="saveClearancePrice(${track.id})"
+                                        class="px-4 py-2 bg-white text-black text-sm rounded hover:bg-zinc-200 transition font-medium"
+                                    >
+                                        Save
+                                    </button>
+                                </div>
+                                
+                                <!-- Current Status -->
+                                ${track.clearance_type ? `
+                                    <div class="mt-2 text-xs">
+                                        <span class="text-zinc-500">Status:</span>
+                                        <span class="font-bold ${
+                                            track.clearance_type === 'FreeClear' ? 'text-green-400' :
+                                            track.clearance_type === 'PreClear' ? 'text-blue-400' :
+                                            track.clearance_type === 'EasyClear' ? 'text-purple-400' : 'text-zinc-400'
+                                        }">
+                                            ${track.clearance_type}${track.clearance_price ? ` - $${track.clearance_price.toFixed(2)}` : ''}
+                                        </span>
+                                    </div>
+                                ` : '<div class="mt-2 text-xs text-zinc-500">No clearance set</div>'}
+                            </div>
+                            
+                            <!-- Split Sheet Section (SOLO ADMIN) -->
+                            ${isAdmin ? `
+                            <div class="mt-4 pt-4 border-t border-zinc-800">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="text-xs text-zinc-500 font-semibold">Split Sheets</div>
+                                    <button 
+                                        onclick="openSplitSheetModal(${track.id})"
+                                        class="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 transition font-medium"
+                                    >
+                                        + Create Split Sheet
+                                    </button>
+                                </div>
+                                <div id="split-sheets-${track.id}" class="text-xs text-zinc-500">
+                                    Loading...
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            showElement('tracksList');
+        }
+
+        // Helper function to format followers count
+        function formatFollowers(count) {
+            if (!count) return '0';
+            if (count >= 1000000) {
+                return (count / 1000000).toFixed(1) + 'M';
+            } else if (count >= 1000) {
+                return (count / 1000).toFixed(1) + 'K';
+            } else {
+                return count.toString();
+            }
+        }
+
+        // Helper function to format large numbers
+        function formatNumber(num) {
+            if (!num) return '0';
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            } else {
+                return num.toString();
+            }
+        }
+
+        function showElement(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function hideElement(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        // ============================================
+        // Clearance System Functions
+        // ============================================
+        
+        // Store selected clearance type per track
+        let selectedClearanceType = {};
+        
+        function selectClearance(trackId, type) {
+            // Store selection
+            selectedClearanceType[trackId] = type;
+            
+            // Update button styles
+            const types = ['FreeClear', 'PreClear', 'EasyClear'];
+            types.forEach(t => {
+                const btn = document.getElementById(`btn-${t.toLowerCase().replace('clear', '')}-${trackId}`);
+                if (btn) {
+                    if (t === type) {
+                        // Active style
+                        btn.className = btn.className.replace(/bg-\w+-\d+/g, '')
+                            .replace(/text-\w+-\d+/g, '')
+                            .replace(/ring-\d/g, '')
+                            .replace(/ring-\w+-\d+/g, '');
+                        
+                        if (type === 'FreeClear') {
+                            btn.className += ' bg-green-600 text-white font-bold ring-2 ring-green-400';
+                        } else if (type === 'PreClear') {
+                            btn.className += ' bg-blue-600 text-white font-bold ring-2 ring-blue-400';
+                        } else if (type === 'EasyClear') {
+                            btn.className += ' bg-purple-600 text-white font-bold ring-2 ring-purple-400';
+                        }
+                    } else {
+                        // Inactive style
+                        btn.className = 'px-3 py-2 text-sm rounded transition bg-zinc-800 text-zinc-400 hover:bg-zinc-700';
+                    }
+                }
+            });
+            
+            // If FreeClear, save immediately with price 0
+            if (type === 'FreeClear') {
+                saveClearanceToServer(trackId, type, 0);
+            }
+        }
+        
+        function saveClearancePrice(trackId) {
+            const priceInput = document.getElementById(`price-${trackId}`);
+            const price = parseFloat(priceInput.value) || 0;
+            const type = selectedClearanceType[trackId];
+            
+            if (!type) {
+                alert('Please select a clearance type first');
+                return;
+            }
+            
+            if (price < 0) {
+                alert('Price cannot be negative');
+                return;
+            }
+            
+            // FreeClear should always be $0
+            if (type === 'FreeClear' && price !== 0) {
+                alert('FreeClear must be $0');
+                priceInput.value = '0';
+                return;
+            }
+            
+            saveClearanceToServer(trackId, type, price);
+        }
+        
+        function saveClearanceToServer(trackId, type, price) {
+            fetch(`/api/track/${trackId}/clearance`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    clearance_type: type,
+                    clearance_price: price
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    console.log('✅ Clearance saved:', data);
+                    // Reload to show updated data
+                    loadCatalog();
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error saving clearance:', error);
+                alert('Error updating clearance: ' + error.message);
+            });
+        }
+        
+        // Load split sheets for a track
+        async function loadTrackSplitSheets(trackId) {
+            // Solo admin puede ver split sheets
+            if (!isAdmin) return;
+            
+            try {
+                const response = await fetch(`/api/track/${trackId}/split-sheets`);
+                const data = await response.json();
+                
+                const container = document.getElementById(`split-sheets-${trackId}`);
+                if (!container) return;
+                
+                if (data.success && data.split_sheets && data.split_sheets.length > 0) {
+                    container.innerHTML = data.split_sheets.map(ss => `
+                        <div class="mt-2 p-2 bg-zinc-800 rounded text-xs">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="font-bold">${ss.collaborators.length} collaborator${ss.collaborators.length > 1 ? 's' : ''}</span>
+                                    <span class="text-zinc-500 ml-2">
+                                        ${ss.status === 'completed' ? '✓ Signed' : ss.status === 'pending_signatures' ? '⏳ Pending' : '📝 Draft'}
+                                    </span>
+                                </div>
+                                <a href="/api/split-sheet/${ss.id}/pdf" target="_blank" class="text-purple-400 hover:text-purple-300">
+                                    PDF ↓
+                                </a>
+                            </div>
+                            <div class="mt-1 text-zinc-500">
+                                ${ss.collaborators.map(c => `${c.name} (${c.percentage}%)${c.signed ? ' ✓' : ''}`).join(', ')}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<span class="text-zinc-600">No split sheets yet</span>';
+                }
+            } catch (error) {
+                console.error('Error loading split sheets:', error);
+                const container = document.getElementById(`split-sheets-${trackId}`);
+                if (container) {
+                    container.innerHTML = '<span class="text-red-400">Error loading</span>';
+                }
+            }
+        }
+        
+        // Override displayTracks to load split sheets after displaying
+        const originalDisplayTracks = displayTracks;
+        displayTracks = function(tracks) {
+            originalDisplayTracks.call(this, tracks);
+            
+            // Load split sheets for each displayed track
+            setTimeout(() => {
+                tracks.forEach(track => {
+                    if (currentFilter === 'all' || 
+                        (currentFilter === 'none' && !track.clearance_type) ||
+                        (track.clearance_type === currentFilter)) {
+                        loadTrackSplitSheets(track.id);
+                    }
+                });
+            }, 100);
+        };
+        
+        // ============================================
+        // Split Sheet Functions
+        // ============================================
+        
+        let currentSplitSheetTrackId = null;
+        
+        function openSplitSheetModal(trackId) {
+            currentSplitSheetTrackId = trackId;
+            document.getElementById('splitSheetModal').classList.remove('hidden');
+            // Reset form
+            document.getElementById('collaboratorsList').innerHTML = '';
+            addCollaboratorField();
+        }
+        
+        function closeSplitSheetModal() {
+            document.getElementById('splitSheetModal').classList.add('hidden');
+        }
+        
+        function addCollaboratorField() {
+            const container = document.getElementById('collaboratorsList');
+            const index = container.children.length;
+            
+            const html = `
+                <div class="bg-zinc-800 p-4 rounded-lg mb-4 collaborator-field" data-index="${index}">
+                    <div class="flex justify-between items-start mb-3">
+                        <h4 class="text-sm font-bold">Collaborator ${index + 1}</h4>
+                        ${index > 0 ? `<button onclick="removeCollaborator(${index})" class="text-red-400 hover:text-red-300 text-xs">Remove</button>` : ''}
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="text" name="name_${index}" placeholder="Name *" required class="col-span-2 px-3 py-2 bg-zinc-700 border border-zinc-600 rounded text-white text-sm">
+                        <input type="email" name="email_${index}" placeholder="Email" class="col-span-2 px-3 py-2 bg-zinc-700 border border-zinc-600 rounded text-white text-sm">
+                        <select name="role_${index}" class="px-3 py-2 bg-zinc-700 border border-zinc-600 rounded text-white text-sm">
+                            <option value="Writer">Writer</option>
+                            <option value="Producer">Producer</option>
+                            <option value="Writer & Producer">Writer & Producer</option>
+                            <option value="Composer">Composer</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <input type="number" name="percentage_${index}" placeholder="Percentage *" required min="0" max="100" step="0.01" class="px-3 py-2 bg-zinc-700 border border-zinc-600 rounded text-white text-sm">
+                        <input type="text" name="ipi_${index}" placeholder="IPI/CAE (optional)" class="px-3 py-2 bg-zinc-700 border border-zinc-600 rounded text-white text-sm">
+                        <input type="text" name="pro_${index}" placeholder="PRO (optional)" class="px-3 py-2 bg-zinc-700 border border-zinc-600 rounded text-white text-sm">
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', html);
+        }
+        
+        function removeCollaborator(index) {
+            const field = document.querySelector(`.collaborator-field[data-index="${index}"]`);
+            if (field) {
+                field.remove();
+                // Update indices
+                document.querySelectorAll('.collaborator-field').forEach((field, newIndex) => {
+                    field.dataset.index = newIndex;
+                    field.querySelector('h4').textContent = `Collaborator ${newIndex + 1}`;
+                });
+            }
+        }
+        
+        async function submitSplitSheet() {
+            if (!currentSplitSheetTrackId) return;
+            
+            // Collect collaborators data
+            const collaborators = [];
+            const fields = document.querySelectorAll('.collaborator-field');
+            
+            fields.forEach((field, index) => {
+                const name = field.querySelector(`input[name="name_${index}"]`).value.trim();
+                const email = field.querySelector(`input[name="email_${index}"]`).value.trim();
+                const role = field.querySelector(`select[name="role_${index}"]`).value;
+                const percentage = parseFloat(field.querySelector(`input[name="percentage_${index}"]`).value);
+                const ipi = field.querySelector(`input[name="ipi_${index}"]`).value.trim();
+                const pro = field.querySelector(`input[name="pro_${index}"]`).value.trim();
+                
+                if (!name || isNaN(percentage)) {
+                    alert(`Collaborator ${index + 1}: Name and percentage are required`);
+                    throw new Error('Invalid data');
+                }
+                
+                collaborators.push({
+                    name,
+                    email: email || null,
+                    role,
+                    percentage,
+                    ipi_cae: ipi || null,
+                    pro: pro || null
+                });
+            });
+            
+            // Validate total percentage
+            const total = collaborators.reduce((sum, c) => sum + c.percentage, 0);
+            if (Math.abs(total - 100) > 0.01) {
+                alert(`Total percentage must equal 100% (currently ${total.toFixed(2)}%)`);
+                return;
+            }
+            
+            // Get notes
+            const notes = document.getElementById('splitSheetNotes').value.trim();
+            
+            try {
+                const response = await fetch(`/api/track/${currentSplitSheetTrackId}/split-sheet`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ collaborators, notes })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Split sheet created successfully!');
+                    closeSplitSheetModal();
+                    loadCatalog(); // Reload to show new split sheet
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error creating split sheet');
+            }
+        }
+    </script>
+    
+    <!-- Split Sheet Modal -->
+    <div id="splitSheetModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+        <div class="bg-zinc-900 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <!-- Header -->
+            <div class="p-6 border-b border-zinc-800 flex justify-between items-center sticky top-0 bg-zinc-900 z-10">
+                <h2 class="text-2xl font-bold">Create Split Sheet</h2>
+                <button onclick="closeSplitSheetModal()" class="text-zinc-400 hover:text-white text-2xl">×</button>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6">
+                <p class="text-zinc-400 mb-6">Add all collaborators and their ownership percentages. Total must equal 100%.</p>
+                
+                <!-- Collaborators List -->
+                <div id="collaboratorsList" class="mb-6"></div>
+                
+                <!-- Add Collaborator Button -->
+                <button 
+                    onclick="addCollaboratorField()"
+                    class="w-full px-4 py-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition text-center mb-6"
+                >
+                    + Add Another Collaborator
+                </button>
+                
+                <!-- Notes -->
+                <div class="mb-6">
+                    <label class="block text-sm text-zinc-400 mb-2">Additional Notes (optional)</label>
+                    <textarea 
+                        id="splitSheetNotes"
+                        rows="4"
+                        placeholder="Any additional information about the split..."
+                        class="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-white text-sm"
+                    ></textarea>
+                </div>
+                
+                <!-- Footer Buttons -->
+                <div class="flex gap-4">
+                    <button 
+                        onclick="closeSplitSheetModal()"
+                        class="flex-1 px-6 py-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        onclick="submitSplitSheet()"
+                        class="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-bold"
+                    >
+                        Create Split Sheet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

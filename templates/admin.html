@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - SONGXS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black text-white min-h-screen">
+
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-sm border-b border-zinc-800">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="/" class="flex items-center">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="SONGXS Logo" class="h-10 object-contain">
+            </a>
+            <div class="flex gap-4 items-center">
+                <a href="/" class="px-4 py-2 bg-zinc-800 text-white rounded hover:bg-zinc-700 transition">
+                    Home
+                </a>
+                <a href="/catalog" class="px-4 py-2 bg-zinc-800 text-white rounded hover:bg-zinc-700 transition">
+                    My Catalog
+                </a>
+                <a href="/admin" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">
+                    🔑 Admin
+                </a>
+                <span class="text-zinc-400 text-sm">|</span>
+                <a href="/logout" class="text-zinc-400 hover:text-white transition text-sm">
+                    Logout
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-6 pt-24 pb-12">
+        
+        <!-- Title -->
+        <div class="mb-8">
+            <h1 class="text-5xl font-bold mb-2">🔑 Admin Panel</h1>
+            <p class="text-zinc-400">Gestiona todos los usuarios y sus catálogos</p>
+        </div>
+
+        <!-- Global Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-zinc-900 rounded-lg p-6">
+                <div class="text-zinc-400 text-sm mb-2">Total Users</div>
+                <div class="text-3xl font-bold" id="totalUsers">0</div>
+            </div>
+            <div class="bg-zinc-900 rounded-lg p-6">
+                <div class="text-zinc-400 text-sm mb-2">Total Tracks</div>
+                <div class="text-3xl font-bold text-blue-400" id="totalTracks">0</div>
+            </div>
+            <div class="bg-zinc-900 rounded-lg p-6">
+                <div class="text-zinc-400 text-sm mb-2">Admins</div>
+                <div class="text-3xl font-bold text-red-400" id="totalAdmins">0</div>
+            </div>
+            <div class="bg-zinc-900 rounded-lg p-6">
+                <div class="text-zinc-400 text-sm mb-2">With ISRC</div>
+                <div class="text-3xl font-bold text-green-400" id="tracksWithISRC">0</div>
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="bg-zinc-900 rounded-lg p-6">
+            <h2 class="text-2xl font-bold mb-6">All Users</h2>
+
+            <!-- Loading -->
+            <div id="loading" class="text-center py-8 hidden">
+                <div class="animate-pulse">Loading users...</div>
+            </div>
+
+            <!-- Users Table -->
+            <div id="usersTable" class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="border-b border-zinc-800">
+                        <tr class="text-left">
+                            <th class="pb-4 text-zinc-400 font-medium">Username</th>
+                            <th class="pb-4 text-zinc-400 font-medium">Email</th>
+                            <th class="pb-4 text-zinc-400 font-medium">Role</th>
+                            <th class="pb-4 text-zinc-400 font-medium">Tracks</th>
+                            <th class="pb-4 text-zinc-400 font-medium">Created</th>
+                            <th class="pb-4 text-zinc-400 font-medium">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- Users will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal: User Catalog -->
+    <div id="catalogModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-6">
+        <div class="bg-zinc-900 rounded-lg max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            
+            <!-- Modal Header -->
+            <div class="p-6 border-b border-zinc-800 flex justify-between items-center">
+                <div>
+                    <h3 class="text-2xl font-bold" id="modalUsername">User Catalog</h3>
+                    <p class="text-zinc-400 text-sm" id="modalEmail"></p>
+                </div>
+                <button onclick="closeModal()" class="text-zinc-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Stats -->
+            <div class="p-6 border-b border-zinc-800 grid grid-cols-3 gap-4">
+                <div>
+                    <div class="text-zinc-400 text-sm">Total Tracks</div>
+                    <div class="text-xl font-bold" id="modalTotalTracks">0</div>
+                </div>
+                <div>
+                    <div class="text-zinc-400 text-sm">With ISRC</div>
+                    <div class="text-xl font-bold" id="modalTracksISRC">0</div>
+                </div>
+                <div>
+                    <div class="text-zinc-400 text-sm">With UPC</div>
+                    <div class="text-xl font-bold" id="modalTracksUPC">0</div>
+                </div>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="flex-1 overflow-y-auto p-6">
+                <div id="modalLoading" class="text-center py-8 hidden">
+                    <div class="animate-pulse">Loading catalog...</div>
+                </div>
+                <div id="modalTracks" class="space-y-3">
+                    <!-- Tracks will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allUsers = [];
+
+        // Load data when page loads
+        window.addEventListener('load', loadAdminData);
+
+        async function loadAdminData() {
+            showElement('loading');
+
+            try {
+                const response = await fetch('/api/admin/users');
+                const data = await response.json();
+
+                if (response.ok) {
+                    allUsers = data.users;
+                    displayUsers(allUsers);
+                    displayStats(data.stats);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+
+                hideElement('loading');
+
+            } catch (error) {
+                console.error('Error:', error);
+                hideElement('loading');
+                alert('Error loading admin data');
+            }
+        }
+
+        function displayStats(stats) {
+            document.getElementById('totalUsers').textContent = stats.total_users;
+            document.getElementById('totalTracks').textContent = stats.total_tracks;
+            document.getElementById('totalAdmins').textContent = stats.total_admins;
+            document.getElementById('tracksWithISRC').textContent = stats.tracks_with_isrc;
+        }
+
+        function displayUsers(users) {
+            const tbody = document.getElementById('usersTableBody');
+            
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-zinc-500">No users found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = users.map(user => `
+                <tr class="border-b border-zinc-800 hover:bg-zinc-800/50">
+                    <td class="py-4 font-bold">${user.username}</td>
+                    <td class="py-4 text-zinc-400">${user.email}</td>
+                    <td class="py-4">
+                        ${user.is_admin ? 
+                            '<span class="px-2 py-1 bg-red-600 text-white text-xs rounded">ADMIN</span>' : 
+                            '<span class="px-2 py-1 bg-zinc-700 text-white text-xs rounded">USER</span>'
+                        }
+                    </td>
+                    <td class="py-4 text-zinc-400">${user.track_count} tracks</td>
+                    <td class="py-4 text-zinc-400 text-sm">${formatDate(user.created_at)}</td>
+                    <td class="py-4">
+                        <button 
+                            onclick="viewUserCatalog(${user.id})"
+                            class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition"
+                        >
+                            View Catalog
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function viewUserCatalog(userId) {
+            // Find user
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            // Show modal
+            showElement('catalogModal');
+            showElement('modalLoading');
+            
+            // Update modal header
+            document.getElementById('modalUsername').textContent = user.username + "'s Catalog";
+            document.getElementById('modalEmail').textContent = user.email;
+
+            try {
+                const response = await fetch(`/api/admin/user/${userId}/catalog`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Display stats
+                    document.getElementById('modalTotalTracks').textContent = data.stats.total_tracks;
+                    document.getElementById('modalTracksISRC').textContent = data.stats.tracks_with_isrc;
+                    document.getElementById('modalTracksUPC').textContent = data.stats.tracks_with_upc;
+
+                    // Display tracks
+                    displayModalTracks(data.tracks);
+                }
+
+                hideElement('modalLoading');
+
+            } catch (error) {
+                console.error('Error:', error);
+                hideElement('modalLoading');
+            }
+        }
+
+        function displayModalTracks(tracks) {
+            const container = document.getElementById('modalTracks');
+            
+            if (tracks.length === 0) {
+                container.innerHTML = '<p class="text-center text-zinc-500 py-8">No tracks yet</p>';
+                return;
+            }
+
+            container.innerHTML = tracks.map(track => `
+                <div class="bg-zinc-800 rounded-lg p-4">
+                    <h4 class="font-bold">${track.track_name}</h4>
+                    <p class="text-zinc-400 text-sm">${track.artists || 'Unknown Artist'}</p>
+                    <div class="mt-2 flex gap-4 text-xs text-zinc-500">
+                        ${track.isrc ? `<span>ISRC: ${track.isrc}</span>` : ''}
+                        ${track.upc ? `<span>UPC: ${track.upc}</span>` : ''}
+                    </div>
+                    ${track.clearance_type ? `
+                        <div class="mt-2">
+                            <span class="px-2 py-1 text-xs rounded ${
+                                track.clearance_type === 'FreeClear' ? 'bg-green-900/30 text-green-300' :
+                                track.clearance_type === 'PreClear' ? 'bg-blue-900/30 text-blue-300' :
+                                track.clearance_type === 'EasyClear' ? 'bg-purple-900/30 text-purple-300' : ''
+                            }">
+                                ${track.clearance_type}${track.clearance_price ? ` - $${track.clearance_price}` : ''}
+                            </span>
+                        </div>
+                    ` : ''}
+                    ${track.spotify_url ? `
+                        <a href="${track.spotify_url}" target="_blank" 
+                           class="inline-block mt-2 px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700">
+                            Spotify
+                        </a>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        function closeModal() {
+            hideElement('catalogModal');
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString();
+        }
+
+        function showElement(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function hideElement(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+
+</body>
+</html>

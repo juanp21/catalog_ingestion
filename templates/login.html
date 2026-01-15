@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - SONGXS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black text-white min-h-screen flex items-center justify-center">
+
+    <div class="max-w-md w-full mx-4">
+        
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="SONGXS Logo" class="h-20 mx-auto mb-4 object-contain">
+            <p class="text-zinc-400">Music Metadata Extractor</p>
+        </div>
+
+        <!-- Login Form -->
+        <div class="bg-zinc-900 rounded-lg p-8">
+            <h2 class="text-2xl font-bold mb-6">Login</h2>
+            
+            <form id="loginForm" class="space-y-4">
+                
+                <!-- Email -->
+                <div>
+                    <label class="block text-sm font-medium mb-2">Email</label>
+                    <input 
+                        type="email" 
+                        id="email"
+                        required
+                        class="w-full p-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-white focus:outline-none"
+                        placeholder="tu@email.com"
+                    />
+                </div>
+
+                <!-- Password -->
+                <div>
+                    <label class="block text-sm font-medium mb-2">Password</label>
+                    <input 
+                        type="password" 
+                        id="password"
+                        required
+                        class="w-full p-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:border-white focus:outline-none"
+                        placeholder="••••••••"
+                    />
+                </div>
+
+                <!-- Error Message -->
+                <div id="errorMessage" class="hidden bg-red-900/20 border border-red-900 rounded-lg p-3 text-red-400 text-sm">
+                </div>
+
+                <!-- Submit Button -->
+                <button 
+                    type="submit"
+                    class="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-zinc-200 transition"
+                >
+                    Login
+                </button>
+
+            </form>
+
+            <!-- Register Link -->
+            <p class="mt-6 text-center text-zinc-400 text-sm">
+                Don't have an account? 
+                <a href="/register" class="text-white hover:underline">Sign up</a>
+            </p>
+
+        </div>
+
+    </div>
+
+    <script>
+        const form = document.getElementById('loginForm');
+        const errorDiv = document.getElementById('errorMessage');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Ocultar errores previos
+            errorDiv.classList.add('hidden');
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Login exitoso
+                    window.location.href = '/';
+                } else {
+                    // Error
+                    errorDiv.textContent = data.error;
+                    errorDiv.classList.remove('hidden');
+                }
+
+            } catch (error) {
+                errorDiv.textContent = 'Error de conexión. Intenta de nuevo.';
+                errorDiv.classList.remove('hidden');
+            }
+        });
+    </script>
+
+</body>
+</html>
